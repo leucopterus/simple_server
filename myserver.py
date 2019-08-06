@@ -66,6 +66,8 @@ class HttpProcessor(BaseHTTPRequestHandler):
         self.send_header("Set-Cookie", cookie.output(header='', sep=''))
 
     def handle_charge(self):
+        # pass cookies from one server to another
+        print(self.headers.get("cookie"))
         if not self.headers.get("cookie") or self.headers.get("cookie") != 'auth_cookie=OK':
             self.send_error(403, message="Forbidden")
 
@@ -74,8 +76,19 @@ class HttpProcessor(BaseHTTPRequestHandler):
             self.wfile.write(page.read().encode(encoding='UTF-8'))
         return
 
-try:
-    my_server = HTTPServer(("", 8001), HttpProcessor)
-    my_server.serve_forever()
-except KeyboardInterrupt:
-    my_server.shutdown()
+
+if __name__ == "__main__":
+    server_addresses = {1: '127.0.0.1:8001', 2: '127.0.0.2:8002'}
+    answer = None
+    while True:
+        print('server can be run on two different addresses:', '1) 127.0.0.1:8001', '2) 127.0.0.2:8002', sep='\n')
+        answer = input('Choose one of options in 1 or 2: ')
+        if answer in ("1", "2"):
+            break
+    server_config = server_addresses[int(answer)]
+    server_addr, server_port = server_config.split(':')
+    try:
+        my_server = HTTPServer((server_addr, int(server_port)), HttpProcessor)
+        my_server.serve_forever()
+    except KeyboardInterrupt:
+        my_server.shutdown()
