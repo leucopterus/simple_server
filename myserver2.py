@@ -31,9 +31,27 @@ class HttpProcessor(BaseHTTPRequestHandler):
         self.path = self.DEFAULT_ROUTING[self.path]
         payload = self.context()
         self.rendering_with_params(**payload)
+        # self.wfile.write(self.data_to_response)
 
     def do_POST(self):
+        # if self.path == self.URLS['CHARGE']:
+        #     self.send_response(301)
+        #     new_path = ''.join(['http://', SERVER_ADDRESSES[1], self.path])
+        #     print(new_path)
+        #     self.send_header('Location', new_path)
+        #     self.end_headers
+        # else:
+        # if self.path == self.URLS['CHARGE']:
+        #     form = cgi.FieldStorage(
+        #         fp=self.rfile,
+        #         headers=self.headers,
+        #         environ={'REQUEST_METHOD': 'POST'}
+        #     )
+        #     purchase = form.getvalue("purchase")
+        # print(purchase)
         self.routing()
+        # new_path = ''.join(['http://', SERVER_ADDRESSES[1], self.path])
+        # self.send_header('Location', new_path)
         self.fill_header()
         if self.path == self.URLS['CHARGE']:
             form = cgi.FieldStorage(
@@ -48,13 +66,19 @@ class HttpProcessor(BaseHTTPRequestHandler):
             }
             payload = self.context(**payload)
             self.rendering_with_params(**payload)
+        # print(self.data_to_response)
+        # self.wfile.write(self.data_to_response)
         return
 
     def routing(self):
         if self.path not in self.DEFAULT_ROUTING:
             self.send_error(404, message="Page Not Found")
+        # elif self.path: # != self.URLS['CHARGE']:
+        #     self.send_response(200, message="OK")
+        # else:
+        #     self.send_response(301)
         else:
-            self.send_response(200, message="OK")
+            self.send_response(200)
 
     def fill_header(self):
         self.send_header('content-type', 'text/html')
@@ -93,6 +117,7 @@ class HttpProcessor(BaseHTTPRequestHandler):
                         line = line.replace(key, value)
                 full_data.append(line)
             data = ''.join(full_data)
+            # self.data_to_response = data.encode(encoding="UTF-8")
             self.wfile.write(data.encode(encoding="UTF-8"))
 
 
