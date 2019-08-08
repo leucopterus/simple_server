@@ -12,9 +12,18 @@
     <p><a href="http://{{server_b}}/auth">auth_page</a></p>
     <p><a href="http://{{server_b}}/out">to reset cookie</a></p>
     <h2>Please, fill out the form</h2>
-    <form method="POST" action="http://{{server_b}}/charge">
+    <form id="MyForm" method="POST" action="http://{{server_b}}/charge">
         <input type="text" name="purchase" value=10>
         <p><input type="submit" name="Submit"></p>
     </form>
+<!--    <script>-->
+<!--        var url = 'http://{{server_b}}/charge';-->
+<!--        var payload = document.getElementsByName('purchase')[0].value;-->
+<!--        fetch(url, {-->
+<!--            method: 'POST',-->
+<!--            "purchase": payload,-->
+<!--            credentials: 'include'-->
+<!--        })-->
+<!--    </script>-->
 </body>
 </html>

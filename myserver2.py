@@ -4,7 +4,6 @@ import cgi
 from http import cookies
 from http.server import (BaseHTTPRequestHandler,
                          HTTPServer)
-from urllib.parse import parse_qs
 
 
 SERVER_ADDRESSES = {1: '127.0.0.1:8001', 2: '127.0.0.2:8002'}
@@ -31,27 +30,9 @@ class HttpProcessor(BaseHTTPRequestHandler):
         self.path = self.DEFAULT_ROUTING[self.path]
         payload = self.context()
         self.rendering_with_params(**payload)
-        # self.wfile.write(self.data_to_response)
 
     def do_POST(self):
-        # if self.path == self.URLS['CHARGE']:
-        #     self.send_response(301)
-        #     new_path = ''.join(['http://', SERVER_ADDRESSES[1], self.path])
-        #     print(new_path)
-        #     self.send_header('Location', new_path)
-        #     self.end_headers
-        # else:
-        # if self.path == self.URLS['CHARGE']:
-        #     form = cgi.FieldStorage(
-        #         fp=self.rfile,
-        #         headers=self.headers,
-        #         environ={'REQUEST_METHOD': 'POST'}
-        #     )
-        #     purchase = form.getvalue("purchase")
-        # print(purchase)
         self.routing()
-        # new_path = ''.join(['http://', SERVER_ADDRESSES[1], self.path])
-        # self.send_header('Location', new_path)
         self.fill_header()
         if self.path == self.URLS['CHARGE']:
             form = cgi.FieldStorage(
@@ -66,17 +47,11 @@ class HttpProcessor(BaseHTTPRequestHandler):
             }
             payload = self.context(**payload)
             self.rendering_with_params(**payload)
-        # print(self.data_to_response)
-        # self.wfile.write(self.data_to_response)
         return
 
     def routing(self):
         if self.path not in self.DEFAULT_ROUTING:
             self.send_error(404, message="Page Not Found")
-        # elif self.path: # != self.URLS['CHARGE']:
-        #     self.send_response(200, message="OK")
-        # else:
-        #     self.send_response(301)
         else:
             self.send_response(200)
 
@@ -88,6 +63,9 @@ class HttpProcessor(BaseHTTPRequestHandler):
             self.handle_charge()
         elif self.path == self.URLS['LOGOUT']:
             self.handle_auth()
+        # allowed_server = ''.join(['http://', SERVER_ADDRESSES[1]])
+        allowed_server = '*'
+        self.send_header("Access-Control-Allow-Origin", allowed_server)
         self.end_headers()
 
     def handle_auth(self, auth_val=0):
@@ -96,8 +74,8 @@ class HttpProcessor(BaseHTTPRequestHandler):
         self.send_header("Set-Cookie", cookie.output(header='', sep=''))
 
     def handle_charge(self):
-        if not self.headers.get("cookie") or self.headers.get("cookie") != 'auth_cookie=OK':
-            self.send_error(403, message="Forbidden")
+        if not self.headers.get("cookie") or 'auth_cookie=OK' not in self.headers.get("cookie"):
+            self.send_error(401, message="Forbidden")
 
     def context(self, **kwargs):
         default = {
@@ -117,15 +95,14 @@ class HttpProcessor(BaseHTTPRequestHandler):
                         line = line.replace(key, value)
                 full_data.append(line)
             data = ''.join(full_data)
-            # self.data_to_response = data.encode(encoding="UTF-8")
             self.wfile.write(data.encode(encoding="UTF-8"))
 
 
 if __name__ == "__main__":
     server_config = SERVER_ADDRESSES[2]
     server_addr, server_port = server_config.split(':')
+    my_server = HTTPServer((server_addr, int(server_port)), HttpProcessor)
     try:
-        my_server = HTTPServer((server_addr, int(server_port)), HttpProcessor)
         my_server.serve_forever()
     except KeyboardInterrupt:
         my_server.shutdown()

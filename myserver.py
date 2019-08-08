@@ -1,10 +1,7 @@
 import os
-import cgi
 
-from http import cookies
 from http.server import (BaseHTTPRequestHandler,
                          HTTPServer)
-from urllib.parse import parse_qs
 
 
 SERVER_ADDRESSES = {1: '127.0.0.1:8001', 2: '127.0.0.2:8002'}
@@ -14,7 +11,6 @@ class HttpProcessor(BaseHTTPRequestHandler):
     URLS = {
         'HOME': '/',
         'FORM': '/form',
-        # 'CHARGE': '/charge',
     }
 
     DEFAULT_ROUTING = {
@@ -25,12 +21,9 @@ class HttpProcessor(BaseHTTPRequestHandler):
     def do_GET(self):
         self.routing()
         self.fill_header()
-        # if self.path != self.URLS['CHARGE']:
         self.path = self.DEFAULT_ROUTING[self.path]
         payload = self.context()
         self.rendering_with_params(**payload)
-        # else:
-        #     self.wfile.write(self.data_to_response)
 
     def routing(self):
         if self.path not in self.DEFAULT_ROUTING:
@@ -66,8 +59,8 @@ class HttpProcessor(BaseHTTPRequestHandler):
 if __name__ == "__main__":
     server_config = SERVER_ADDRESSES[1]
     server_addr, server_port = server_config.split(':')
+    my_server = HTTPServer((server_addr, int(server_port)), HttpProcessor)
     try:
-        my_server = HTTPServer((server_addr, int(server_port)), HttpProcessor)
         my_server.serve_forever()
     except KeyboardInterrupt:
         my_server.shutdown()
