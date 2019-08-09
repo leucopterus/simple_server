@@ -4,7 +4,7 @@ from http.server import (BaseHTTPRequestHandler,
                          HTTPServer)
 
 
-SERVER_ADDRESSES = {1: '127.0.0.1:8001', 2: '127.0.0.2:8002'}
+SERVER_ADDRESSES = {1: 'localhost:8001', 2: '0.0.0.0:8002'}
 
 
 class HttpProcessor(BaseHTTPRequestHandler):
@@ -17,6 +17,14 @@ class HttpProcessor(BaseHTTPRequestHandler):
         URLS['HOME']: '/'.join([os.getcwd(), 'form.html']),
         URLS['FORM']: '/'.join([os.getcwd(), 'form.html']),
     }
+
+    def do_OPTION(self):
+        self.send_response(200)
+        self.send_header('Access-Control-Allow-Origin', '*')
+        self.send_header('Access-Control-Allow-Credentials', True)
+        self.send_header('Access-Control-Allow-Methods', 'GET,PUT,POST,DELETE')
+        self.send_header("Access-Control-Allow-Headers", "Origin, X-Requested-With, Content-Type, Accept")
+        self.end_headers()
 
     def do_GET(self):
         self.routing()
@@ -32,7 +40,9 @@ class HttpProcessor(BaseHTTPRequestHandler):
             self.send_response(200, message="OK")
 
     def fill_header(self):
-        self.send_header('content-type', 'text/html')
+        allowed_server = '*'
+        self.send_header("Access-Control-Allow-Origin", allowed_server)
+        self.send_header('Content-Type', 'text/html')
         self.end_headers()
 
     def context(self, **kwargs):

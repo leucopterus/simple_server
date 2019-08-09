@@ -6,7 +6,7 @@ from http.server import (BaseHTTPRequestHandler,
                          HTTPServer)
 
 
-SERVER_ADDRESSES = {1: '127.0.0.1:8001', 2: '127.0.0.2:8002'}
+SERVER_ADDRESSES = {1: 'localhost:8001', 2: '0.0.0.0:8002'}
 
 
 class HttpProcessor(BaseHTTPRequestHandler):
@@ -31,6 +31,13 @@ class HttpProcessor(BaseHTTPRequestHandler):
         payload = self.context()
         self.rendering_with_params(**payload)
 
+    def do_OPTION(self):
+        self.send_response(200)
+        self.send_header('Access-Control-Allow-Origin', '*')
+        self.send_header('Access-Control-Allow-Credentials', True)
+        self.send_header('Access-Control-Allow-Methods', 'GET,PUT,POST,DELETE')
+        self.end_headers()
+
     def do_POST(self):
         self.routing()
         self.fill_header()
@@ -38,15 +45,22 @@ class HttpProcessor(BaseHTTPRequestHandler):
             form = cgi.FieldStorage(
                 fp=self.rfile,
                 headers=self.headers,
-                environ={'REQUEST_METHOD': 'POST'}
+                environ={
+                    'REQUEST_METHOD': 'POST',
+                    'CONTENT_TYPE': 'text/html'
+                }
+                # {'REQUEST_METHOD': 'POST'}
             )
             purchase = form.getvalue("purchase")
+            # print(f"purchase = {purchase}")
             self.path = self.DEFAULT_ROUTING[self.path]
             payload = {
                 '{{from_form.purchase}}': purchase,
             }
             payload = self.context(**payload)
             self.rendering_with_params(**payload)
+            # print(f'POST get {purchase}')
+            self.wfile.write(f'{purchase}$ were sent'.encode(encoding='UTF-8'))
         return
 
     def routing(self):
@@ -56,7 +70,9 @@ class HttpProcessor(BaseHTTPRequestHandler):
             self.send_response(200)
 
     def fill_header(self):
-        self.send_header('content-type', 'text/html')
+        allowed_server = '*'
+        self.send_header("Access-Control-Allow-Origin", allowed_server)
+        self.send_header('Content-Type', 'text/html')
         if self.path in (self.URLS['HOME'], self.URLS['AUTH']):
             self.handle_auth("OK")
         elif self.path == self.URLS['CHARGE']:
@@ -64,8 +80,6 @@ class HttpProcessor(BaseHTTPRequestHandler):
         elif self.path == self.URLS['LOGOUT']:
             self.handle_auth()
         # allowed_server = ''.join(['http://', SERVER_ADDRESSES[1]])
-        allowed_server = '*'
-        self.send_header("Access-Control-Allow-Origin", allowed_server)
         self.end_headers()
 
     def handle_auth(self, auth_val=0):
