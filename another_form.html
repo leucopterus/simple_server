@@ -9,12 +9,9 @@
 </head>
 <body>
     <h1>form page</h1>
-    <button onclick="location.href='./in'">Log In</button>
-    <button onclick="location.href='./out'">Log Out</button>
     <h2>Please, fill out the form</h2>
-    <form method="POST" action="./charge">
-        <input type="hidden" value="{{my_token}}">
-        <input type="text" name="purchase" value=10>
+    <form method="POST" action="http://127.0.0.1:8001/charge">
+        <input type="text" name="purchase" value=999>
         <p><input type="submit" name="Submit"></p>
     </form>
 </body>
