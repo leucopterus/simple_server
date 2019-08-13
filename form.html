@@ -12,8 +12,9 @@
     <button onclick="location.href='./in'">Log In</button>
     <button onclick="location.href='./out'">Log Out</button>
     <h2>Please, fill out the form</h2>
+    <p>You have just one minute to fill this form out</p>
     <form method="POST" action="./charge">
-        <input type="hidden" value="{{my_token}}">
+        <input type="hidden" name="token" value="{{my_token}}">
         <input type="text" name="purchase" value=10>
         <p><input type="submit" name="Submit"></p>
     </form>
