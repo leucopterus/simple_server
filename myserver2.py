@@ -10,6 +10,7 @@ SERVER_ADDRESSES = {1: 'localhost:8001', 2: '0.0.0.0:8002'}
 
 
 class HttpProcessor(BaseHTTPRequestHandler):
+    # allowed urls
     URLS = {
         'HOME': '/',
         'AUTH': '/auth',
@@ -17,6 +18,7 @@ class HttpProcessor(BaseHTTPRequestHandler):
         'LOGOUT': '/out',
     }
 
+    # url and path connection
     DEFAULT_ROUTING = {
         URLS['HOME']: '/'.join([os.getcwd(), 'auth.html']),
         URLS['AUTH']: '/'.join([os.getcwd(), 'auth.html']),
@@ -24,21 +26,21 @@ class HttpProcessor(BaseHTTPRequestHandler):
         URLS['LOGOUT']: '/'.join([os.getcwd(), 'auth.html']),
     }
 
-    def do_GET(self):
+    def do_GET(self) -> None:
         self.routing()
         self.fill_header()
         self.path = self.DEFAULT_ROUTING[self.path]
         payload = self.context()
         self.rendering_with_params(**payload)
 
-    def do_OPTION(self):
+    def do_OPTION(self) -> None:
         self.send_response(200)
         self.send_header('Access-Control-Allow-Origin', '*')
         self.send_header('Access-Control-Allow-Credentials', True)
         self.send_header('Access-Control-Allow-Methods', 'GET,PUT,POST,DELETE')
         self.end_headers()
 
-    def do_POST(self):
+    def do_POST(self) -> None:
         self.routing()
         self.fill_header()
         if self.path == self.URLS['CHARGE']:
@@ -49,27 +51,25 @@ class HttpProcessor(BaseHTTPRequestHandler):
                     'REQUEST_METHOD': 'POST',
                     'CONTENT_TYPE': 'text/html'
                 }
-                # {'REQUEST_METHOD': 'POST'}
             )
             purchase = form.getvalue("purchase")
-            # print(f"purchase = {purchase}")
             self.path = self.DEFAULT_ROUTING[self.path]
             payload = {
                 '{{from_form.purchase}}': purchase,
             }
             payload = self.context(**payload)
             self.rendering_with_params(**payload)
-            # print(f'POST get {purchase}')
             self.wfile.write(f'{purchase}$ were sent'.encode(encoding='UTF-8'))
-        return
 
-    def routing(self):
+    def routing(self) -> None:
+        """check if the page is presented"""
         if self.path not in self.DEFAULT_ROUTING:
             self.send_error(404, message="Page Not Found")
         else:
             self.send_response(200)
 
-    def fill_header(self):
+    def fill_header(self) -> None:
+        """set headers"""
         allowed_server = '*'
         self.send_header("Access-Control-Allow-Origin", allowed_server)
         self.send_header('Content-Type', 'text/html')
@@ -79,19 +79,21 @@ class HttpProcessor(BaseHTTPRequestHandler):
             self.handle_charge()
         elif self.path == self.URLS['LOGOUT']:
             self.handle_auth()
-        # allowed_server = ''.join(['http://', SERVER_ADDRESSES[1]])
         self.end_headers()
 
-    def handle_auth(self, auth_val=0):
+    def handle_auth(self, auth_val=0) -> None:
+        """enable or disable cookie"""
         cookie = cookies.SimpleCookie()
         cookie["auth_cookie"] = auth_val
         self.send_header("Set-Cookie", cookie.output(header='', sep=''))
 
-    def handle_charge(self):
+    def handle_charge(self) -> None:
+        """check cookie"""
         if not self.headers.get("cookie") or 'auth_cookie=OK' not in self.headers.get("cookie"):
             self.send_error(401, message="Forbidden")
 
-    def context(self, **kwargs):
+    def context(self, **kwargs) -> dict:
+        """set default context to change in html pages"""
         default = {
             '{{server_a}}': SERVER_ADDRESSES[1],
             '{{server_b}}': SERVER_ADDRESSES[2],
@@ -100,7 +102,8 @@ class HttpProcessor(BaseHTTPRequestHandler):
             default[key] = value
         return default
 
-    def rendering_with_params(self, **kwargs):
+    def rendering_with_params(self, **kwargs) -> None:
+        """rendering page with parameters (like Jinja)"""
         with open(self.path, encoding='UTF-8') as page:
             full_data = []
             for line in page:
