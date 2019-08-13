@@ -1,0 +1,19 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="X-UA-Compatible" content="ie=edge">
+    <link rel="icon" href="data:;base64,=">
+    <title>form page</title>
+</head>
+<body>
+    <h1>form page</h1>
+    <h2>Please, fill out the form</h2>
+    <form method="POST" action="http://127.0.0.1:8001/charge">
+        <input type="hidden" name="token" value="{{my_bad_token}}">
+        <input type="text" name="purchase" value=999>
+        <p><input type="submit" name="Submit"></p>
+    </form>
+</body>
+</html>
