@@ -4,7 +4,6 @@ import cgi
 from http import cookies
 from http.server import (BaseHTTPRequestHandler,
                          HTTPServer)
-from urllib.parse import parse_qs
 
 
 class HttpProcessor(BaseHTTPRequestHandler):
@@ -17,13 +16,13 @@ class HttpProcessor(BaseHTTPRequestHandler):
         LOGOUT: '/'.join([os.getcwd(), 'auth.html']),
     }
 
-    def do_GET(self):
+    def do_GET(self) -> None:
         self.routing()
         self.fill_header()
         self.path = self.DEFAULT_ROUTING[self.path]
         self.rendering()
 
-    def do_POST(self):
+    def do_POST(self) -> None:
         self.routing()
         self.fill_header()
         if self.path == '/charge':
@@ -42,15 +41,14 @@ class HttpProcessor(BaseHTTPRequestHandler):
                     full_data.append(line)
                 data = ''.join(full_data)
                 self.wfile.write(data.encode(encoding="UTF-8"))
-            return
 
-    def routing(self):
+    def routing(self) -> None:
         if self.path not in self.DEFAULT_ROUTING:
             self.send_error(404, message="Page Not Found")
         else:
             self.send_response(200, message="OK")
 
-    def fill_header(self):
+    def fill_header(self) -> None:
         self.send_header('content-type', 'text/html')
         if self.path in ('/', '/auth'):
             self.handle_auth("OK")
@@ -60,22 +58,24 @@ class HttpProcessor(BaseHTTPRequestHandler):
             self.handle_auth()
         self.end_headers()
 
-    def handle_auth(self, auth_val=0):
+    def handle_auth(self, auth_val=0) -> None:
         cookie = cookies.SimpleCookie()
         cookie["auth_cookie"] = auth_val
         self.send_header("Set-Cookie", cookie.output(header='', sep=''))
 
-    def handle_charge(self):
+    def handle_charge(self) -> None:
         if not self.headers.get("cookie") or self.headers.get("cookie") != 'auth_cookie=OK':
             self.send_error(403, message="Forbidden")
 
-    def rendering(self):
+    def rendering(self) -> None:
         with open(self.path, encoding='UTF-8') as page:
             self.wfile.write(page.read().encode(encoding='UTF-8'))
         return
 
-try:
+
+if __name__ == '__main__':
     my_server = HTTPServer(("", 8001), HttpProcessor)
-    my_server.serve_forever()
-except KeyboardInterrupt:
-    my_server.shutdown()
+    try:
+        my_server.serve_forever()
+    except KeyboardInterrupt:
+        my_server.shutdown()
