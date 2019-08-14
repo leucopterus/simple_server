@@ -59,7 +59,6 @@ class HttpProcessor(BaseHTTPRequestHandler):
             }
             payload = self.context(**payload)
             self.rendering_with_params(**payload)
-            self.wfile.write(f'{purchase}$ were sent'.encode(encoding='UTF-8'))
 
     def routing(self) -> None:
         """check if the page is presented"""
