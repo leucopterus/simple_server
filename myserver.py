@@ -1,5 +1,6 @@
 import os
 import cgi
+import datetime
 
 from http import cookies
 from http.server import (BaseHTTPRequestHandler,
@@ -9,22 +10,24 @@ from http.server import (BaseHTTPRequestHandler,
 class HttpProcessor(BaseHTTPRequestHandler):
     LOGOUT = '/out'
     DEFAULT_ROUTING = {
-        '/': '/'.join([os.getcwd(), 'auth.html']),
-        '/auth': '/'.join([os.getcwd(), 'auth.html']),
-        '/form': '/'.join([os.getcwd(), 'form.html']),
-        '/charge': '/'.join([os.getcwd(), 'charge.html']),
-        LOGOUT: '/'.join([os.getcwd(), 'auth.html']),
+        '/': os.path.join(os.getcwd(), 'auth.html'),
+        '/auth': os.path.join(os.getcwd(), 'auth.html'),
+        '/form': os.path.join(os.getcwd(), 'form.html'),
+        '/charge': os.path.join(os.getcwd(), 'charge.html'),
+        LOGOUT: os.path.join(os.getcwd(), 'auth.html'),
     }
 
-    def do_GET(self) -> None:
-        self.routing()
-        self.fill_header()
-        self.path = self.DEFAULT_ROUTING[self.path]
-        self.rendering()
+    def do_GET(self):
+        self.verify_url()
+        self.file_path = self.DEFAULT_ROUTING[self.path]
+        if os.path.exists(self.file_path):
+            self.send_response(200)
+            self.fill_header()
+            self.rendering()
+        self.send_error(500)
 
-    def do_POST(self) -> None:
-        self.routing()
-        self.fill_header()
+    def do_POST(self):
+        self.verify_url()
         if self.path == '/charge':
             form = cgi.FieldStorage(
                 fp=self.rfile,
@@ -32,45 +35,56 @@ class HttpProcessor(BaseHTTPRequestHandler):
                 environ={'REQUEST_METHOD': 'POST'}
             )
             purchase = form.getvalue("purchase")
-            self.path = self.DEFAULT_ROUTING[self.path]
-            with open(self.path, encoding='UTF-8') as page:
-                full_data = []
-                for line in page:
-                    if '{{from_form.purchase}}' in line:
-                        line = line.replace('{{from_form.purchase}}', str(purchase))
-                    full_data.append(line)
-                data = ''.join(full_data)
-                self.wfile.write(data.encode(encoding="UTF-8"))
+            if purchase is None:
+                self.send_error(400)
+            try:
+                int(purchase)
+            except ValueError:
+                try:
+                    float(purchase)
+                except ValueError:
+                    self.send_error(400)
+            self.file_path = self.DEFAULT_ROUTING[self.path]
+            if not os.path.exists(self.file_path):
+                self.send_error(500)
+            with open(self.file_path, encoding='UTF-8') as page:
+                data = page.read()
+                data = data.format(purchase=purchase)
+            self.send_response(200)
+            self.fill_header()
+            self.wfile.write(data.encode(encoding="UTF-8"))
+        else:
+            self.send_error(404)
 
-    def routing(self) -> None:
+    def verify_url(self):
         if self.path not in self.DEFAULT_ROUTING:
             self.send_error(404, message="Page Not Found")
-        else:
-            self.send_response(200, message="OK")
 
-    def fill_header(self) -> None:
+    def fill_header(self):
         self.send_header('content-type', 'text/html')
         if self.path in ('/', '/auth'):
             self.handle_auth("OK")
         elif self.path == '/charge':
-            self.handle_charge()
+            self.handle_charge_access()
         elif self.path == self.LOGOUT:
             self.handle_auth()
         self.end_headers()
 
-    def handle_auth(self, auth_val=0) -> None:
+    def handle_auth(self, auth_val=0):
         cookie = cookies.SimpleCookie()
         cookie["auth_cookie"] = auth_val
+        if not auth_val:
+            expires = datetime.datetime(1970, 1, 1, 0, 0, 0)
+            cookie["auth_cookie"]["expires"] = expires.strftime('%a, %d %b %Y %H:%M:%S')
         self.send_header("Set-Cookie", cookie.output(header='', sep=''))
 
-    def handle_charge(self) -> None:
+    def handle_charge_access(self):
         if not self.headers.get("cookie") or self.headers.get("cookie") != 'auth_cookie=OK':
-            self.send_error(403, message="Forbidden")
+            self.send_error(401, message="Forbidden")
 
-    def rendering(self) -> None:
-        with open(self.path, encoding='UTF-8') as page:
+    def rendering(self):
+        with open(self.file_path, encoding='UTF-8') as page:
             self.wfile.write(page.read().encode(encoding='UTF-8'))
-        return
 
 
 if __name__ == '__main__':
