@@ -26,6 +26,10 @@ class HttpProcessor(BaseHTTPRequestHandler):
         LOGOUT: os.path.join(os.getcwd(), 'auth.html'),
     }
 
+    def __init__(self, *args, **kwargs):
+        self.file_path = ''
+        super().__init__(*args, **kwargs)
+
     def do_GET(self) -> None:
         """GET method implementation"""
         self.verify_url()
@@ -64,7 +68,7 @@ class HttpProcessor(BaseHTTPRequestHandler):
             self.send_error(404, message="Page Not Found")
 
     def check_file_existence(self) -> None:
-        """Check is file in a dirictory"""
+        """Check if file exists in a dirictory"""
         if not os.path.exists(self.file_path):
             self.send_error(500)
 
