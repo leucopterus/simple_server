@@ -2,6 +2,7 @@ import os
 import cgi
 import datetime
 import argparse
+import decimal
 
 from http import cookies
 from http.server import (BaseHTTPRequestHandler,
@@ -30,54 +31,56 @@ class HttpProcessor(BaseHTTPRequestHandler):
         URLS['LOGOUT']: '/'.join([os.getcwd(), 'auth.html']),
     }
 
+    LIST_OF_POST_METHOD_PAGES = [URLS['CHARGE']]
+
+    def __init__(self, *args, **kwargs):
+        self.file_path = ''
+        super().__init__(*args, **kwargs)
+
     def do_GET(self) -> None:
         self.verify_url()
         self.file_path = self.DEFAULT_ROUTING[self.path]
-        if os.path.exists(self.file_path):
-            self.send_response(200)
-            self.fill_header()
-            payload = self.context()
-            data = self.rendering_with_params(**payload)
-            self.wfile.write(data.encode(encoding="UTF-8"))
-        else:
-            self.send_error(500)
+        self.check_file_existence()
+        payload = self.context()
+        data = self.rendering_with_params(**payload)
+        self.send_response(200, message='OK')
+        self.fill_header()
+        self.wfile.write(data.encode(encoding="UTF-8"))
 
     def do_POST(self) -> None:
         self.verify_url()
-        if self.path == '/charge':
+        if self.path in self.LIST_OF_POST_METHOD_PAGES:
             form = cgi.FieldStorage(
                 fp=self.rfile,
                 headers=self.headers,
                 environ={'REQUEST_METHOD': 'POST'}
             )
-            purchase = form.getvalue("purchase")
-            if purchase is None:
-                self.send_error(400)
-            try:
-                int(purchase)
-            except ValueError:
-                try:
-                    float(purchase)
-                except ValueError:
-                    self.send_error(400)
+            form_data = ''
+            html_page = ''
             self.file_path = self.DEFAULT_ROUTING[self.path]
-            if not os.path.exists(self.file_path):
-                self.send_error(500)
-            payload = {
-                '{purchase}': purchase,
-            }
+            self.check_file_existence()
+            if self.path == self.URLS['CHARGE']:
+                form_data = self.process_charge_data(form)
+                payload = {
+                    '{purchase}': form_data,
+                }
             payload = self.context(**payload)
             data = self.rendering_with_params(**payload)
-            self.send_response(200)
+            self.send_response(200, message='OK')
             self.fill_header()
             self.wfile.write(data.encode(encoding="UTF-8"))
         else:
-            self.send_error(404)
+            self.send_error(404, message="Such page is not presented")
 
     def verify_url(self) -> None:
         """check if the page is presented"""
         if self.path not in self.DEFAULT_ROUTING:
-            self.send_error(404)
+            self.send_error(404, message="Such page is not presented")
+
+    def check_file_existence(self) -> None:
+        """Check if file exists in a dirictory"""
+        if not os.path.exists(self.file_path):
+            self.send_error(500, message="File was removed")
 
     def fill_header(self) -> None:
         """
@@ -105,7 +108,18 @@ class HttpProcessor(BaseHTTPRequestHandler):
     def handle_charge_access(self) -> None:
         """check cookie"""
         if not self.headers.get("cookie") or self.headers.get("cookie") != 'auth_cookie=OK':
-            self.send_error(401, message="Forbidden")
+            self.send_error(401, message="Please, log in")
+
+    def process_charge_data(self, form) -> str:
+        """Collect date out of form"""
+        purchase = form.getvalue("purchase")
+        if purchase is None:
+            self.send_error(400, message='invalid sum value, should be number')
+        try:
+            decimal.Decimal(purchase)
+        except decimal.InvalidOperation:
+            self.send_error(400, message='invalid sum value, should be number')
+        return purchase
 
     def context(self, **kwargs) -> dict:
         """create full dict of values to change in html"""
@@ -128,7 +142,7 @@ class HttpProcessor(BaseHTTPRequestHandler):
                 full_data.append(line)
         data = ''.join(full_data)
         if not data:
-            self.send_error(400)
+            self.send_error(400, message='Somwthing wrong with sent data')
         return data
 
 
