@@ -56,7 +56,7 @@ class HttpProcessor(BaseHTTPRequestHandler):
                 environ={'REQUEST_METHOD': 'POST'}
             )
             form_data = ''
-            html_page = ''
+            payload = {}
             self.file_path = self.DEFAULT_ROUTING[self.path]
             self.check_file_existence()
             if self.path == self.URLS['CHARGE']:
