@@ -142,7 +142,7 @@ class HttpProcessor(BaseHTTPRequestHandler):
                 full_data.append(line)
         data = ''.join(full_data)
         if not data:
-            self.send_error(400, message='Somwthing wrong with sent data')
+            self.send_error(400, message='Something wrong with sent data')
         return data
 
 
