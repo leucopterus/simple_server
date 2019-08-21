@@ -9,7 +9,7 @@ from http.server import (BaseHTTPRequestHandler,
                          HTTPServer)
 
 
-SERVER_ADDRESSES = {1: '127.0.0.1:8001', 2: '0.0.0.0:8002'}
+SERVER_ADDRESSES = {"A": '127.0.0.1:8001', "B": '0.0.0.0:8002'}
 
 
 class HttpProcessor(BaseHTTPRequestHandler):
@@ -124,8 +124,8 @@ class HttpProcessor(BaseHTTPRequestHandler):
     def context(self, **kwargs) -> dict:
         """create full dict of values to change in html"""
         default = {
-            '{server_a}': SERVER_ADDRESSES[1],
-            '{server_b}': SERVER_ADDRESSES[2],
+            '{server_a}': SERVER_ADDRESSES["A"],
+            '{server_b}': SERVER_ADDRESSES["B"],
         }
         for key, value in kwargs.items():
             default[key] = value
@@ -174,14 +174,14 @@ if __name__ == '__main__':
     parser = init_parser()
     args = parser.parse_args()
     if args.reverse:
-        SERVER_ADDRESSES[1], SERVER_ADDRESSES[2] = SERVER_ADDRESSES[2], SERVER_ADDRESSES[1]
+        SERVER_ADDRESSES["A"], SERVER_ADDRESSES["B"] = SERVER_ADDRESSES["B"], SERVER_ADDRESSES["A"]
     else:
         if args.serverA:
-            SERVER_ADDRESSES[1] = args.serverA
+            SERVER_ADDRESSES["A"] = args.serverA
         if args.serverB:
-            SERVER_ADDRESSES[2] = args.serverB
-    print(f'Your server addresses are: {SERVER_ADDRESSES[1]} and {SERVER_ADDRESSES[2]}')
-    server_config = SERVER_ADDRESSES[1]
+            SERVER_ADDRESSES["B"] = args.serverB
+    print(f'Your server addresses are: {SERVER_ADDRESSES["A"]} and {SERVER_ADDRESSES["B"]}')
+    server_config = SERVER_ADDRESSES["A"]
     server_addr, server_port = server_config.split(':')
     my_server = HTTPServer((server_addr, int(server_port)), HttpProcessor)
     try:
